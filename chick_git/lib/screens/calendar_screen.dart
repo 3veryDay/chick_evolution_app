@@ -102,7 +102,7 @@ class _CalendarScreenState extends State<CalendarScreen> {
           // 요일 헤더
           _buildWeekdayHeader(),
 
-          // 달력 그리드
+          // 달력 그리드 (화면 꽉 채우기)
           Expanded(
             child: _buildCalendarGrid(),
           ),
@@ -150,47 +150,46 @@ class _CalendarScreenState extends State<CalendarScreen> {
       Duration(days: (firstDayOfMonth.weekday - 1) % 7),
     );
 
-    return ListView.builder(
-      padding: const EdgeInsets.all(8),
-      itemCount: 6, // 최대 6주
-      itemBuilder: (context, weekIndex) {
-        return _buildWeekRow(weekIndex, startDay, lastDayOfMonth);
-      },
+    // 6주 고정 (화면 꽉 채우기 위해 Column + Expanded 사용)
+    return Column(
+      children: List.generate(6, (weekIndex) {
+        return Expanded(
+          child: _buildWeekRow(weekIndex, startDay, lastDayOfMonth),
+        );
+      }),
     );
   }
 
   Widget _buildWeekRow(int weekIndex, DateTime startDay, DateTime lastDayOfMonth) {
     final weekStart = startDay.add(Duration(days: weekIndex * 7));
     
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 2),
-      child: Row(
-        children: List.generate(7, (dayIndex) {
-          final date = weekStart.add(Duration(days: dayIndex));
-          final isWeekend = dayIndex >= 5;
-          final isCurrentMonth = date.month == _selectedMonth.month;
-          final isToday = _isToday(date);
-          final hasEntry = _hasEntry(date);
+    return Row(
+      children: List.generate(7, (dayIndex) {
+        final date = weekStart.add(Duration(days: dayIndex));
+        final isWeekend = dayIndex >= 5;
+        final isCurrentMonth = date.month == _selectedMonth.month;
+        final isToday = _isToday(date);
+        final hasEntry = _hasEntry(date);
 
-          if (!isCurrentMonth && date.isAfter(lastDayOfMonth)) {
-            return Expanded(
-              flex: isWeekend ? 1 : 2,
-              child: const SizedBox(),
-            );
-          }
-
+        // 빈 공간 처리 (다음 달 날짜가 캘린더 범위를 벗어난 경우)
+        if (!isCurrentMonth && date.isAfter(lastDayOfMonth)) {
           return Expanded(
             flex: isWeekend ? 1 : 2,
-            child: _buildDayCell(
-              date,
-              isCurrentMonth,
-              isToday,
-              hasEntry,
-              isWeekend,
-            ),
+            child: Container(),
           );
-        }),
-      ),
+        }
+
+        return Expanded(
+          flex: isWeekend ? 1 : 2,
+          child: _buildDayCell(
+            date,
+            isCurrentMonth,
+            isToday,
+            hasEntry,
+            isWeekend,
+          ),
+        );
+      }),
     );
   }
 
@@ -201,6 +200,11 @@ class _CalendarScreenState extends State<CalendarScreen> {
     bool hasEntry,
     bool isWeekend,
   ) {
+    // Null 에러 방지를 위한 안전한 접근
+    final entry = isCurrentMonth && hasEntry ? _entries[_formatDateKey(date)] : null;
+    final scheduleEvents = entry?.scheduleEvents ?? [];
+    final scheduleCount = scheduleEvents.length;
+
     return GestureDetector(
       onTap: isCurrentMonth ? () => _onDayTapped(date) : null,
       child: Container(
@@ -209,7 +213,7 @@ class _CalendarScreenState extends State<CalendarScreen> {
           color: isToday
               ? Colors.amber.shade300
               : hasEntry
-                  ? Colors.green.shade100
+                  ? Colors.green.shade50
                   : Colors.white,
           borderRadius: BorderRadius.circular(8),
           border: Border.all(
@@ -219,14 +223,18 @@ class _CalendarScreenState extends State<CalendarScreen> {
             width: isToday ? 2 : 1,
           ),
         ),
-        child: Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Text(
+        // Stack이 Container 크기를 꽉 채우도록 설정
+        child: Stack(
+          fit: StackFit.expand, 
+          children: [
+            // 1. 날짜 (왼쪽 위)
+            Positioned(
+              top: 4,
+              left: 4,
+              child: Text(
                 '${date.day}',
                 style: TextStyle(
-                  fontSize: 16,
+                  fontSize: 14,
                   fontWeight: isToday ? FontWeight.bold : FontWeight.normal,
                   color: !isCurrentMonth
                       ? Colors.grey.shade400
@@ -235,9 +243,68 @@ class _CalendarScreenState extends State<CalendarScreen> {
                           : Colors.brown.shade900,
                 ),
               ),
-              if (hasEntry)
-                Container(
-                  margin: const EdgeInsets.only(top: 2),
+            ),
+            
+            // 2. 일정 텍스트 표시 (원하시는 기능!)
+            if (scheduleCount > 0)
+              Positioned(
+                bottom: 4,
+                left: 4,
+                right: 4,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: scheduleEvents.take(2).map((event) {
+                    return Container(
+                      margin: const EdgeInsets.only(bottom: 2),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 3,
+                        vertical: 1,
+                      ),
+                      decoration: BoxDecoration(
+                        color: event.isMeeting
+                            ? Colors.blue.shade100
+                            : Colors.purple.shade100,
+                        borderRadius: BorderRadius.circular(2),
+                      ),
+                      child: Text(
+                        event.name,
+                        style: TextStyle(
+                          fontSize: 9, // 글자 크기 조정
+                          color: event.isMeeting
+                              ? Colors.blue.shade900
+                              : Colors.purple.shade900,
+                          fontWeight: FontWeight.w500,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    );
+                  }).toList(),
+                ),
+              ),
+
+            // 3. 더 많은 일정 표시 (+N)
+            if (scheduleCount > 2)
+              Positioned(
+                bottom: 2,
+                right: 2,
+                child: Text(
+                  '+${scheduleCount - 2}',
+                  style: TextStyle(
+                    fontSize: 8,
+                    color: Colors.grey.shade600,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+              
+            // 4. 작성 완료 표시 (우측 상단 초록 점)
+            if (hasEntry)
+              Positioned(
+                top: 4,
+                right: 4,
+                child: Container(
                   width: 6,
                   height: 6,
                   decoration: BoxDecoration(
@@ -245,8 +312,8 @@ class _CalendarScreenState extends State<CalendarScreen> {
                     shape: BoxShape.circle,
                   ),
                 ),
-            ],
-          ),
+              ),
+          ],
         ),
       ),
     );

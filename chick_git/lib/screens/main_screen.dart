@@ -41,8 +41,17 @@ class _MainScreenState extends State<MainScreen> {
       context,
       MaterialPageRoute(builder: (context) => const CalendarScreen()),
     );
-    // 캘린더에서 돌아올 때 진행상황 업데이트
     _loadProgress();
+  }
+
+  void _navigateToGoals() {
+    // TODO: 목표 화면 구현 예정
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('목표 설정 기능은 곧 추가될 예정입니다!'),
+        duration: Duration(seconds: 2),
+      ),
+    );
   }
 
   @override
@@ -50,91 +59,129 @@ class _MainScreenState extends State<MainScreen> {
     return Scaffold(
       backgroundColor: Colors.amber.shade50,
       body: SafeArea(
-        child: Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              const Spacer(),
-              
-              // 진화 단계 텍스트
-              Text(
-                _evolutionStage,
-                style: const TextStyle(
-                  fontSize: 32,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.brown,
-                ),
-              ),
-              const SizedBox(height: 20),
-              
-              // 알 이미지 (placeholder)
-              Container(
-                width: 200,
-                height: 200,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  gradient: RadialGradient(
-                    colors: [
-                      Colors.amber.shade200,
-                      Colors.amber.shade400,
-                    ],
+        child: Column(
+          children: [
+            // 상단 버튼 영역
+            Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: Row(
+                children: [
+                  // 내 목표 버튼
+                  Expanded(
+                    child: ElevatedButton.icon(
+                      onPressed: _navigateToGoals,
+                      icon: const Icon(Icons.flag_outlined, size: 24),
+                      label: const Text(
+                        '내 목표',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.white,
+                        foregroundColor: Colors.brown.shade700,
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          side: BorderSide(
+                            color: Colors.brown.shade300,
+                            width: 2,
+                          ),
+                        ),
+                        elevation: 2,
+                      ),
+                    ),
                   ),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.brown.withOpacity(0.3),
-                      blurRadius: 20,
-                      spreadRadius: 5,
+                  const SizedBox(width: 12),
+                  // 달력 버튼
+                  Expanded(
+                    child: ElevatedButton.icon(
+                      onPressed: _navigateToCalendar,
+                      icon: const Icon(Icons.calendar_month, size: 24),
+                      label: const Text(
+                        '달력',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.amber.shade400,
+                        foregroundColor: Colors.brown.shade900,
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        elevation: 3,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+
+            // 중앙 컨텐츠
+            Expanded(
+              child: Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    // 진화 단계 텍스트
+                    Text(
+                      _evolutionStage,
+                      style: const TextStyle(
+                        fontSize: 32,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.brown,
+                      ),
+                    ),
+                    const SizedBox(height: 20),
+
+                    // 알 이미지
+                    Container(
+                      width: 200,
+                      height: 200,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        gradient: RadialGradient(
+                          colors: [
+                            Colors.amber.shade200,
+                            Colors.amber.shade400,
+                          ],
+                        ),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.brown.withOpacity(0.3),
+                            blurRadius: 20,
+                            spreadRadius: 5,
+                          ),
+                        ],
+                      ),
+                      child: Center(
+                        child: Text(
+                          _getEvolutionEmoji(),
+                          style: const TextStyle(fontSize: 100),
+                        ),
+                      ),
+                    ),
+
+                    const SizedBox(height: 30),
+
+                    // 진행 상황
+                    Text(
+                      '성장 일수: $_completedDays일',
+                      style: TextStyle(
+                        fontSize: 18,
+                        color: Colors.brown.shade700,
+                        fontWeight: FontWeight.w500,
+                      ),
                     ),
                   ],
                 ),
-                child: Center(
-                  child: Text(
-                    _getEvolutionEmoji(),
-                    style: const TextStyle(fontSize: 100),
-                  ),
-                ),
               ),
-              
-              const SizedBox(height: 30),
-              
-              // 진행 상황
-              Text(
-                '성장 일수: $_completedDays일',
-                style: TextStyle(
-                  fontSize: 18,
-                  color: Colors.brown.shade700,
-                  fontWeight: FontWeight.w500,
-                ),
-              ),
-              
-              const Spacer(),
-              
-              // 달력 버튼
-              Padding(
-                padding: const EdgeInsets.all(32.0),
-                child: ElevatedButton.icon(
-                  onPressed: _navigateToCalendar,
-                  icon: const Icon(Icons.calendar_month, size: 28),
-                  label: const Text(
-                    '개발예정',
-                    style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-                  ),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.amber.shade400,
-                    foregroundColor: Colors.brown.shade900,
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 40,
-                      vertical: 20,
-                    ),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(30),
-                    ),
-                    elevation: 5,
-                  ),
-                ),
-              ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );
